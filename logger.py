@@ -17,12 +17,12 @@ def create_log(name):
                                            backupCount=30, encoding='utf-8')
 
     # 创建日志记录的格式 日志等级 输入日志信息的文件名 行数 日志信息
-    fmt = '%(asctime)s %(levelname)0.4s %(message)s'
+    fmt = '%(asctime)s %(levelname)0.4s %(filename)s:%(lineno)d %(message)s'
     formatter = logging.Formatter(fmt=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 
+    logging.basicConfig(format=fmt, level=logging.INFO, datefmt='%H:%M:%S')
     # 为刚创建的日志记录器设置日志记录格式
     file_log_handler.setFormatter(formatter)
-    logging.basicConfig(level=logging.INFO)
     _logger = logging.getLogger(name)
     _logger.addHandler(file_log_handler)
     return _logger
