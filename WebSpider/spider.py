@@ -45,7 +45,8 @@ def sleep(min_second=3, max_second=7):
             except Exception as e:
                 self.logger.error(e)
                 self.logger.error(f"{fn.__name__}, {args}, {kwargs}")
-                # raise e
+                if fn.__name__ == 'get':
+                    raise e
                 self.dr.refresh()
                 time.sleep(second)
         return wrapper
@@ -204,3 +205,4 @@ class Spider:
     def loop_event(self):
         while self.duration < self.plan_duration:
             self.event()
+        self.dr.quit()
