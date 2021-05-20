@@ -39,12 +39,12 @@ def sleep(min_second=3, max_second=7):
             second = random.randint(min_second, max(min_second, max_second))
             try:
                 res = fn(self, *args, **kwargs)
-                self.logger.info(f"睡眠{second}秒")
+                self.logger.info(f"{self}：睡眠{second}秒")
                 time.sleep(second)
                 return res
             except Exception as e:
-                self.logger.error(e)
-                self.logger.error(f"{fn.__name__}, {args}, {kwargs}")
+                self.logger.error(f"{self}：{str(e)}")
+                self.logger.error(f"{self}：{fn.__name__}, {args}, {kwargs}")
                 if fn.__name__ == 'get':
                     raise e
                 self.dr.refresh()
@@ -79,9 +79,12 @@ class Spider:
         # 指定运行时长
         self.plan_duration = _random(duration) * 60
 
+    def __repr__(self):
+        return f"<Spider-{id(self)}>"
+
     # 等待某个元素加载完
     def _wait(self, by, value):
-        self.logger.info(f"等待加载 {value} 元素")
+        self.logger.info(f"{self}：等待加载 {value} 元素")
         Wait(self.dr, 30).until(
             condition.presence_of_element_located((by, value)), message="元素加载失败")
 
@@ -103,7 +106,7 @@ class Spider:
     @sleep()
     def scroll(self):
         scroll_times = random.randint(0, 5)
-        self.logger.info(f"随机滚动{scroll_times}次")
+        self.logger.info(f"{self}：随机滚动{scroll_times}次")
         scroll_height = 0
         for _ in range(scroll_times):
             scroll_height += _random(range(400, 700))
@@ -128,7 +131,7 @@ class Spider:
                 self.dr.close()
                 self.dr.switch_to.window(self.dr.window_handles[0])
         except TimeoutException as e:
-            self.logger.error(f"{str(e)}, 重载页面")
+            self.logger.error(f"{self}：{str(e)}, 重载页面")
             self.dr.refresh()
 
     @sleep()
@@ -136,7 +139,7 @@ class Spider:
         nav_class = 'nav-item'
         navs = self.dr.find_elements_by_class_name(nav_class)[:6]
         nav_element = _random(navs)
-        self.logger.info(f"选择主导航 {nav_element.text}")
+        self.logger.info(f"{self}：选择主导航 {nav_element.text}")
         sub_nav_class = 'menu-link'
         sub_navs = nav_element.find_elements_by_class_name(sub_nav_class)
         if sub_navs:
@@ -144,7 +147,7 @@ class Spider:
             self.click(nav_element, wait=nav_class)
         else:
             nav_to_click = nav_element
-        self.logger.info(f"点击导航'{nav_to_click.text}', {nav_to_click.get_attribute('class')}")
+        self.logger.info(f"{self}：点击导航'{nav_to_click.text}', {nav_to_click.get_attribute('class')}")
         self.click(nav_to_click, wait=sub_nav_class)
 
     @sleep()
@@ -180,7 +183,7 @@ class Spider:
             self.scroll()
             self.loop_event()
         except TimeoutException:
-            self.logger("浏览器加载超时退出")
+            self.logger(f"{self}：浏览器加载超时退出")
             self.dr.quit()
 
     def event(self):
