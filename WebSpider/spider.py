@@ -45,7 +45,9 @@ def sleep(min_second=3, max_second=7):
             except Exception as e:
                 self.logger.error(e)
                 self.logger.error(f"{fn.__name__}, {args}, {kwargs}")
-                raise e
+                # raise e
+                self.dr.refresh()
+                time.sleep(second)
         return wrapper
     return decorate
 
@@ -78,11 +80,12 @@ class Spider:
 
     # 等待某个元素加载完
     def _wait(self, by, value):
+        self.logger.info(f"等待加载 {value} 元素")
         Wait(self.dr, 30).until(
             condition.presence_of_element_located((by, value)), message="元素加载失败")
 
     def set_proxy(self):
-        self.option.add_argument(f"--proxy-server=socks5://127.0.0.1:10808")
+        self.option.add_argument(f"--proxy-server=socks5://127.0.0.1:7891")
 
     def load_plugin(self):
         self.option.add_argument('')
@@ -114,10 +117,12 @@ class Spider:
         return time.time() - self.start_time.timestamp()
 
     @retry(exceptions=WebDriverException, tries=3, logger=logger, delay=1)
-    def click(self, element):
+    def click(self, element, wait=None):
         try:
-            self._wait(By.CLASS_NAME, element.get_attribute('class'))
+            class_name = wait or element.get_attribute('class')
+            self._wait(By.CLASS_NAME, class_name)
             element.click()
+            time.sleep(2)
             if 'zb.com' not in self.dr.current_url:
                 self.dr.close()
                 self.dr.switch_to.window(self.dr.window_handles[0])
@@ -126,19 +131,34 @@ class Spider:
             self.dr.refresh()
 
     @sleep()
-    @retry(exceptions=WebDriverException, tries=3, delay=2, logger=logger)
     def click_nav(self):
-        navs = self.dr.find_elements_by_class_name('nav-item')[:6]
+        nav_class = 'nav-item'
+        navs = self.dr.find_elements_by_class_name(nav_class)[:6]
         nav_element = _random(navs)
         self.logger.info(f"选择主导航 {nav_element.text}")
-        sub_navs = nav_element.find_elements_by_class_name('menu-link')
+        sub_nav_class = 'menu-link'
+        sub_navs = nav_element.find_elements_by_class_name(sub_nav_class)
         if sub_navs:
             nav_to_click = _random(sub_navs)
-            self.click(nav_element)
+            self.click(nav_element, wait=nav_class)
         else:
             nav_to_click = nav_element
         self.logger.info(f"点击导航'{nav_to_click.text}', {nav_to_click.get_attribute('class')}")
-        self.click(nav_to_click)
+        self.click(nav_to_click, wait=sub_nav_class)
+
+    @sleep()
+    def click_corn_item(self):
+        if 'markets' not in self.dr.current_url:
+            item_class = 'trade-pair'
+            corn = self.dr.find_element_by_class_name(item_class)
+            self.click(corn, wait=item_class)
+            self.random_click_many('coin-item')
+
+    @sleep()
+    def to_home(self, path):
+        home_class = 'logo-wrap' if path not in ['lever-kline', 'kline'] else 'menu-logo'
+        home = self.dr.find_element_by_class_name(home_class)
+        self.click(home)
 
     @sleep()
     @retry(exceptions=WebDriverException, tries=3, delay=2, logger=logger)
@@ -146,34 +166,41 @@ class Spider:
         corn_types = self.dr.find_elements_by_class_name(class_name)
         if corn_types:
             typ = _random(corn_types if not limit else corn_types[:limit])
-            self.click(typ)
+            self.click(typ, wait=class_name)
 
     def random_click_many(self, class_name, times=5, limit=None):
         for _ in range(0, random.randint(1, times)):
             self.random_click(class_name, limit)
 
     def run(self):
-        self.get(self.home)
-        self.start_time = datetime.now()
-        self.scroll()
-        self.loop_event()
+        try:
+            self.get(self.home)
+            self.start_time = datetime.now()
+            self.scroll()
+            self.loop_event()
+        except TimeoutException:
+            self.logger("浏览器加载超时退出")
+            self.dr.quit()
+
+    def event(self):
+        self.click_nav()
+        parser = urlparse(self.dr.current_url)
+        path = parser.path.replace(self.main_path, '').split('/')[0]
+        if path == 'markets':
+            self.scroll()
+            # 切换币分区
+            self.random_click_many('el-tabs__item', times=2, limit=None)
+            # 选择币种
+            self.random_click('market-body-item')
+            self.click_corn_item()
+            self.to_home(path)
+        elif path == 'trade':
+            self.random_click_many('tabs-item', times=2, limit=4)
+            self.random_click_many('coin-item')
+        elif path in ['lever-kline', 'kline']:
+            self.click_corn_item()
+            self.to_home(path)
 
     def loop_event(self):
         while self.duration < self.plan_duration:
-            self.click_nav()
-            self.scroll()
-            parser = urlparse(self.dr.current_url)
-            path = parser.path.replace(self.main_path, '').split('/')[0]
-            if path == 'markets':
-                # 切换币分区
-                self.random_click_many('el-tabs__item', times=2, limit=None)
-                # 选择币种
-                self.random_click('market-body-item')
-                corn = self.dr.find_element_by_class_name('trade-pair')
-                self.click(corn)
-                self.random_click_many('coin-item')
-            elif path == 'trade':
-                self.random_click_many('tabs-item', times=2, limit=4)
-                self.random_click_many('coin-item')
-            elif path in ['lever-kline', 'kline']:
-                self.random_click_many('coin-item')
+            self.event()
