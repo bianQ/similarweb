@@ -185,6 +185,7 @@ class Spider:
             self.loop_event()
         except TimeoutException:
             self.logger(f"{self}：浏览器加载超时退出")
+        finally:
             self.dr.quit()
 
     def event(self):
