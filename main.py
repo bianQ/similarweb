@@ -20,7 +20,7 @@ def create_spider(use_plugin, use_proxy):
 @click.option('--times', type=int, default=0, help="一共访问多少次，默认10次")
 def run(use_plugin, use_proxy, workers, times):
     pool = MultiThread(max_workers=workers)
-    for _ in range(times * 100 or 10):
+    for _ in range(times or 10):
         pool.execute(create_spider, use_plugin, use_proxy)
 
 
