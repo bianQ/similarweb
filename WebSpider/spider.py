@@ -156,7 +156,8 @@ class Spider:
             item_class = 'trade-pair'
             corn = self.dr.find_element_by_class_name(item_class)
             self.click(corn, wait=item_class)
-            self.random_click_many('coin-item')
+            time.sleep(2)
+            self.random_click_many('coin-item', limit=20)
 
     @sleep()
     def to_home(self, path):
@@ -200,7 +201,7 @@ class Spider:
             self.to_home(path)
         elif path == 'trade':
             self.random_click_many('tabs-item', times=2, limit=4)
-            self.random_click_many('coin-item')
+            self.random_click_many('coin-item', limit=15)
         elif path in ['lever-kline', 'kline']:
             self.click_corn_item()
             self.to_home(path)
