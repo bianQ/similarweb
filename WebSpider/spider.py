@@ -55,11 +55,15 @@ def sleep(min_second=3, max_second=7):
 
 class Spider:
 
-    def __init__(self, use_plugin=False, use_proxy=False, load_img=True, timeout=60, duration=(4, 6)):
+    def __init__(self, use_plugin=False, use_proxy=False, load_img=True, timeout=60, duration=(4, 6),
+                 window=True):
         self.option = Options()
         self.option.add_experimental_option('excludeSwitches', ['enable-logging'])
         if use_proxy:
             self.set_proxy()
+        if not window:
+            self.option.add_argument('--headless')
+            self.option.add_argument('--disable-gpu')
 
         self.dr = webdriver.Chrome(executable_path=CHROME_PATH, options=self.option)
         self.dr.set_page_load_timeout(timeout)

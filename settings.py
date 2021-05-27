@@ -38,3 +38,6 @@ START_URLS = [
 
 # 运行次数
 RUNNING_TIMES = 10
+
+# 是否使用窗口模式 True/False
+USE_WINDOW = True
