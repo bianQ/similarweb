@@ -64,6 +64,8 @@ class Spider:
         if not window:
             self.option.add_argument('--headless')
             self.option.add_argument('--disable-gpu')
+            self.option.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML'
+                                     ', like Gecko) Chrome/90.0.4430.212 Safari/537.36')
 
         self.dr = webdriver.Chrome(executable_path=CHROME_PATH, options=self.option)
         self.dr.set_page_load_timeout(timeout)
