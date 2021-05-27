@@ -35,3 +35,6 @@ START_URLS = [
     'https://zb.com/en/',
     'https://zb.com/kr/'
 ]
+
+# 运行次数
+RUNNING_TIMES = 10
