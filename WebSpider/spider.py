@@ -18,7 +18,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
-from settings import CHROME_PATH, START_URLS
+from settings import CHROME_PATH, START_URLS, PROXY
 from logger import logger
 
 
@@ -89,7 +89,7 @@ class Spider:
             condition.presence_of_element_located((by, value)), message="元素加载失败")
 
     def set_proxy(self):
-        self.option.add_argument(f"--proxy-server=socks5://127.0.0.1:7891")
+        self.option.add_argument(f"--proxy-server={PROXY['PROTOCOL']}://{PROXY['IP']}:{PROXY['PORT']}")
 
     def load_plugin(self):
         self.option.add_argument('')

@@ -16,6 +16,13 @@ CHROME_PATH = r'C:\Program Files (x86)\Google\Chrome\Application\chromedriver.ex
 LOG_DIR = os.path.join(PROJECT_DIR, 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
 
+# 代理设置
+PROXY = {
+    'IP': '127.0.0.1',
+    'PORT': '7891',
+    'PROTOCOL': 'socks5'
+}
+
 # 线程数量
 THREAD_MAX_NUM = 5
 
