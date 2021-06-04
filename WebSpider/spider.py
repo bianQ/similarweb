@@ -57,6 +57,7 @@ class Spider:
 
     def __init__(self, use_plugin=False, use_proxy=False, load_img=True, timeout=60, duration=(4, 6),
                  window=True):
+        self.logger = logger
         self.option = Options()
         self.option.add_experimental_option('excludeSwitches', ['enable-logging'])
         if use_proxy:
@@ -68,17 +69,20 @@ class Spider:
                                      ', like Gecko) Chrome/90.0.4430.212 Safari/537.36')
 
         self.dr = webdriver.Chrome(executable_path=CHROME_PATH, options=self.option)
-        self.dr.set_page_load_timeout(timeout)
-        self.dr.execute_cdp_cmd(
-            "Page.addScriptToEvaluateOnNewDocument", {
-                "source": """
-                    Object.defineProperty(navigator, 'webdriver', {
-                      get: () => undefined
-                    })
-                """
-            }
-        )
-        self.logger = logger
+        try:
+            self.dr.set_page_load_timeout(timeout)
+            self.dr.execute_cdp_cmd(
+                "Page.addScriptToEvaluateOnNewDocument", {
+                    "source": """
+                        Object.defineProperty(navigator, 'webdriver', {
+                          get: () => undefined
+                        })
+                    """
+                }
+            )
+        except WebDriverException as e:
+            self.logger.error(f"浏览器初始化失败：{str(e)}")
+            self.dr.quit()
         self.start_time = None
         self.home = _random(START_URLS)
         self.main_path = urlparse(self.home).path
@@ -99,6 +103,10 @@ class Spider:
 
     def load_plugin(self):
         self.option.add_argument('')
+
+    @property
+    def is_alive(self):
+        return self.dr.service.process is not None
 
     @sleep()
     def get(self, url):
@@ -132,10 +140,6 @@ class Spider:
             class_name = wait or element.get_attribute('class')
             self._wait(By.CLASS_NAME, class_name)
             element.click()
-            time.sleep(2)
-            if 'zb.com' not in self.dr.current_url:
-                self.dr.close()
-                self.dr.switch_to.window(self.dr.window_handles[0])
         except TimeoutException as e:
             self.logger.error(f"{self}：{str(e)}, 重载页面")
             self.dr.refresh()
@@ -184,6 +188,8 @@ class Spider:
             self.random_click(class_name, limit)
 
     def run(self):
+        if not self.is_alive:
+            return
         try:
             self.get(self.home)
             self.start_time = datetime.now()
@@ -195,6 +201,9 @@ class Spider:
             self.dr.quit()
 
     def event(self):
+        if 'zb.com' not in self.dr.current_url:
+            self.dr.close()
+            self.dr.switch_to.window(self.dr.window_handles[0])
         self.click_nav()
         parser = urlparse(self.dr.current_url)
         path = parser.path.replace(self.main_path, '').split('/')[0]
