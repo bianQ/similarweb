@@ -6,6 +6,7 @@
 """
 import random
 import time
+import asyncio
 from typing import Sequence
 from datetime import datetime
 from urllib.parse import parse_qs, urlparse
@@ -18,6 +19,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
+from WebSpider.threads import async_func_with_self, async_func
 from settings import CHROME_PATH, START_URLS, PROXY
 from logger import logger
 
@@ -38,9 +40,13 @@ def sleep(min_second=3, max_second=7):
         def wrapper(self, *args, **kwargs):
             second = random.randint(min_second, max(min_second, max_second))
             try:
-                res = fn(self, *args, **kwargs)
-                self.logger.info(f"{self}：睡眠{second}秒")
-                time.sleep(second)
+                if self.use_async:
+                    kwargs['second'] = second
+                    res = async_func_with_self(fn, self, *args, **kwargs)
+                else:
+                    res = fn(self, *args, **kwargs)
+                    time.sleep(second)
+                    self.logger.info(f"{self}：睡眠{second}秒")
                 return res
             except Exception as e:
                 self.logger.error(f"{self}：{str(e)}")
@@ -56,7 +62,8 @@ def sleep(min_second=3, max_second=7):
 class Spider:
 
     def __init__(self, use_plugin=False, use_proxy=False, load_img=True, timeout=60, duration=(4, 6),
-                 window=True):
+                 window=True, use_async=False):
+        self.use_async = use_async
         self.logger = logger
         self.option = Options()
         self.option.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -98,6 +105,20 @@ class Spider:
         Wait(self.dr, 30).until(
             condition.presence_of_element_located((by, value)), message="元素加载失败")
 
+    async def _async_wait(self, by, value):
+        self.logger.info(f"{self}：等待加载 {value} 元素")
+        await asyncio.sleep(5)
+        method = condition.presence_of_element_located((by, value))
+        value = method(self.dr)
+        if not value:
+            raise TimeoutException("元素加载失败")
+
+    def wait(self, by, value):
+        if self.use_async:
+            self._async_wait(by, value)
+        else:
+            self._wait(by, value)
+
     def set_proxy(self):
         self.option.add_argument(f"--proxy-server={PROXY['PROTOCOL']}://{PROXY['IP']}:{PROXY['PORT']}")
 
@@ -138,7 +159,7 @@ class Spider:
     def click(self, element, wait=None):
         try:
             class_name = wait or element.get_attribute('class')
-            self._wait(By.CLASS_NAME, class_name)
+            self.wait(By.CLASS_NAME, class_name)
             element.click()
         except TimeoutException as e:
             self.logger.error(f"{self}：{str(e)}, 重载页面")

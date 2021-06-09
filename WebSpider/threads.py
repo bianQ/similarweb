@@ -4,8 +4,9 @@
 @author:    Alan
 @time:      2021/05/18
 """
-from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
+import asyncio
 import traceback
+from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 
 
 class MultiThread(ThreadPoolExecutor):
@@ -31,3 +32,20 @@ class MultiThread(ThreadPoolExecutor):
     def execute_after_done(fn, workers, *args, **kwargs):
         wait(workers, timeout=86400, return_when=ALL_COMPLETED)
         return fn(*args, **kwargs)
+
+
+async def async_func(fn, *args, **kwargs):
+    second = kwargs.pop('second', 0)
+    res = fn(*args, **kwargs)
+    if second:
+        await asyncio.sleep(second)
+    return res
+
+
+async def async_func_with_self(fn, self, *args, **kwargs):
+    second = kwargs.pop('second', 0)
+    res = fn(self, *args, **kwargs)
+    if second:
+        self.logger.info(f"{self}：睡眠{second}秒")
+        await asyncio.sleep(second)
+    return res
