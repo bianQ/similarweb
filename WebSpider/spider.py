@@ -18,7 +18,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
-from settings import CHROME_PATH, START_URLS, PROXY
+from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR
 from logger import logger
 
 
@@ -62,6 +62,8 @@ class Spider:
         self.option.add_experimental_option('excludeSwitches', ['enable-logging'])
         if use_proxy:
             self.set_proxy()
+        if use_plugin:
+            self.load_plugin()
         if not window:
             self.option.add_argument('--headless')
             self.option.add_argument('--disable-gpu')
@@ -102,7 +104,8 @@ class Spider:
         self.option.add_argument(f"--proxy-server={PROXY['PROTOCOL']}://{PROXY['IP']}:{PROXY['PORT']}")
 
     def load_plugin(self):
-        self.option.add_argument('')
+        for path in CHROME_PLUGIN_DIR:
+            self.option.add_argument(fr'load-extension={path}')
 
     @property
     def is_alive(self):
@@ -201,8 +204,7 @@ class Spider:
             self.dr.quit()
 
     def event(self):
-        if 'zb.com' not in self.dr.current_url:
-            self.dr.close()
+        if len(self.dr.window_handles) > 1:
             self.dr.switch_to.window(self.dr.window_handles[0])
         self.click_nav()
         parser = urlparse(self.dr.current_url)
