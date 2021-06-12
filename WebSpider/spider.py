@@ -6,6 +6,7 @@
 """
 import random
 import time
+import os
 from typing import Sequence
 from datetime import datetime
 from urllib.parse import parse_qs, urlparse
@@ -18,7 +19,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
-from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR
+from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR
 from logger import logger
 
 
@@ -90,6 +91,8 @@ class Spider:
         self.main_path = urlparse(self.home).path
         # 指定运行时长
         self.plan_duration = _random(duration) * 60
+        # 访问过的链接
+        self.view_urls = set()
 
     def __repr__(self):
         return f"<Spider-{id(self)}>"
@@ -195,13 +198,19 @@ class Spider:
             return
         try:
             self.get(self.home)
+            self.view_urls.add(self.home)
             self.start_time = datetime.now()
             self.scroll()
             self.loop_event()
         except TimeoutException:
-            self.logger(f"{self}：浏览器加载超时退出")
+            self.logger.error(f"{self}：浏览器加载超时退出")
         finally:
             self.dr.quit()
+            view_url_count = len(self.view_urls)
+            if view_url_count >= 2:
+                success_log = os.path.join(LOG_DIR, 'success.txt')
+                with open(success_log, 'a') as f:
+                    f.write(f"{self}, {view_url_count}, {self.start_time}\n")
 
     def event(self):
         if len(self.dr.window_handles) > 1:
@@ -227,4 +236,5 @@ class Spider:
     def loop_event(self):
         while self.duration < self.plan_duration:
             self.event()
-        self.dr.quit()
+            parse = urlparse(self.dr.current_url)
+            self.view_urls.add(f"{parse.netloc}/{parse.path}")

@@ -28,6 +28,7 @@ THREAD_MAX_NUM = 5
 
 # 浏览器插件配置
 CHROME_PLUGIN_DIR = []
+LOAD_PLUGIN = True
 
 # 主页
 START_URLS = [
