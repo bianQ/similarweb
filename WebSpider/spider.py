@@ -215,6 +215,8 @@ class Spider:
     def event(self):
         if len(self.dr.window_handles) > 1:
             self.dr.switch_to.window(self.dr.window_handles[0])
+        if 'kline' in self.dr.current_url:
+            self.logger.info(f"{self}：open kline")
         self.click_nav()
         parser = urlparse(self.dr.current_url)
         path = parser.path.replace(self.main_path, '').split('/')[0]
