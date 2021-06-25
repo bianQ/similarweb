@@ -208,6 +208,10 @@ class Spider:
             item_probability = kwargs.get('item_probability')
             typ = _random(corn_types if not limit else corn_types[:limit], item_probability)
             self.click(typ, wait=class_name)
+            if 'kline' in self.dr.current_url:
+                coin_log = os.path.join(LOG_DIR, 'coin.txt')
+                with open(coin_log, 'a') as f:
+                    f.write(f"{self}, {self.dr.current_url}, {datetime.now()}\n")
 
     def random_click_many(self, class_name, times=5, limit=None, **kwargs):
         for _ in range(0, random.randint(1, times)):
