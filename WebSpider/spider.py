@@ -30,8 +30,24 @@ class PageTree:
     }
 
 
-def _random(data: Sequence):
-    return random.choice(data)
+def _random(data: Sequence, item_probability: dict = None):
+    """
+    :param data:
+    :param item_probability: 根据索引指定元素被选中的概率，概率值小于等于 1
+    :return:
+    """
+    if item_probability is not None:
+        total_probability = sum(item_probability.values())
+        assert total_probability <= 1, ValueError("概率之和不能大于 1")
+        new_data = []
+        for index, item in enumerate(data):
+            probability = item_probability.get(index)
+            if not probability:
+                probability = (1 - total_probability) / (len(data) - len(item_probability))
+            new_data.extend([item] * int(probability * 100))
+    else:
+        new_data = data
+    return random.choice(new_data)
 
 
 def sleep(min_second=3, max_second=7):
@@ -154,12 +170,15 @@ class Spider:
     def click_nav(self):
         nav_class = 'nav-item'
         navs = self.dr.find_elements_by_class_name(nav_class)[:6]
-        nav_element = _random(navs)
+        nav_element = _random(navs, {1: 0.05, 2: 0.9, 5: 0.05})
         self.logger.info(f"{self}：选择主导航 {nav_element.text}")
         sub_nav_class = 'menu-link'
         sub_navs = nav_element.find_elements_by_class_name(sub_nav_class)
         if sub_navs:
-            nav_to_click = _random(sub_navs)
+            # 选择交易时，指定子导航的点击概率
+            trade_nav = nav_element.find_elements_by_class_name("trade-menu")
+            item_probability = {1: 0.85} if trade_nav else None
+            nav_to_click = _random(sub_navs, item_probability)
             self.click(nav_element, wait=nav_class)
         else:
             nav_to_click = nav_element
@@ -167,13 +186,13 @@ class Spider:
         self.click(nav_to_click, wait=sub_nav_class)
 
     @sleep()
-    def click_corn_item(self):
+    def click_corn_item(self, item_probability=None):
         if 'markets' not in self.dr.current_url:
             item_class = 'trade-pair'
             corn = self.dr.find_element_by_class_name(item_class)
             self.click(corn, wait=item_class)
             time.sleep(2)
-            self.random_click_many('coin-item', limit=20)
+            self.random_click_many('coin-item', limit=20, item_probability=item_probability)
 
     @sleep()
     def to_home(self, path):
@@ -183,15 +202,16 @@ class Spider:
 
     @sleep()
     @retry(exceptions=WebDriverException, tries=3, delay=2, logger=logger)
-    def random_click(self, class_name, limit=None):
+    def random_click(self, class_name, limit=None, **kwargs):
         corn_types = self.dr.find_elements_by_class_name(class_name)
         if corn_types:
-            typ = _random(corn_types if not limit else corn_types[:limit])
+            item_probability = kwargs.get('item_probability')
+            typ = _random(corn_types if not limit else corn_types[:limit], item_probability)
             self.click(typ, wait=class_name)
 
-    def random_click_many(self, class_name, times=5, limit=None):
+    def random_click_many(self, class_name, times=5, limit=None, **kwargs):
         for _ in range(0, random.randint(1, times)):
-            self.random_click(class_name, limit)
+            self.random_click(class_name, limit, **kwargs)
 
     def run(self):
         if not self.is_alive:
@@ -232,7 +252,7 @@ class Spider:
             self.random_click_many('tabs-item', times=2, limit=4)
             self.random_click_many('coin-item', limit=15)
         elif path in ['lever-kline', 'kline']:
-            self.click_corn_item()
+            self.click_corn_item(item_probability={1: 0.15, 2: 0.15})
             self.to_home(path)
 
     def loop_event(self):
