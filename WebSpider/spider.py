@@ -192,7 +192,7 @@ class Spider:
             corn = self.dr.find_element_by_class_name(item_class)
             self.click(corn, wait=item_class)
             time.sleep(2)
-            self.random_click_many('coin-item', limit=20, item_probability=item_probability)
+            self.random_click_many('coin-item', min_iter=3, max_iter=5, limit=20, item_probability=item_probability)
 
     @sleep()
     def to_home(self, path):
@@ -213,9 +213,12 @@ class Spider:
                 with open(coin_log, 'a') as f:
                     f.write(f"{self}, {self.dr.current_url}, {datetime.now()}\n")
 
-    def random_click_many(self, class_name, times=5, limit=None, **kwargs):
-        for _ in range(0, random.randint(1, times)):
+    def random_click_many(self, class_name, min_iter=1, max_iter=5, limit=None, **kwargs):
+        for _ in range(0, random.randint(min_iter, max_iter)):
             self.random_click(class_name, limit, **kwargs)
+            # 记录交易页访问币种数量
+            if 'kline' in self.dr.current_url:
+                self.view_urls.add(self.dr.current_url)
 
     def run(self):
         if not self.is_alive:
@@ -247,14 +250,14 @@ class Spider:
         if path == 'markets':
             self.scroll()
             # 切换币分区
-            self.random_click_many('el-tabs__item', times=2, limit=None)
+            self.random_click_many('el-tabs__item', max_iter=2, limit=None)
             # 选择币种
             self.random_click('market-body-item')
             self.click_corn_item()
             self.to_home(path)
         elif path == 'trade':
-            self.random_click_many('tabs-item', times=2, limit=4)
-            self.random_click_many('coin-item', limit=15)
+            self.random_click_many('tabs-item', max_iter=2, limit=4)
+            self.random_click_many('coin-item', max_iter=15)
         elif path in ['lever-kline', 'kline']:
             self.click_corn_item(item_probability={1: 0.15, 2: 0.15})
             self.to_home(path)
@@ -262,5 +265,5 @@ class Spider:
     def loop_event(self):
         while self.duration < self.plan_duration:
             self.event()
-            parse = urlparse(self.dr.current_url)
-            self.view_urls.add(f"{parse.netloc}/{parse.path}")
+            # parse = urlparse(self.dr.current_url)
+            # self.view_urls.add(f"{parse.netloc}/{parse.path}")
