@@ -20,6 +20,7 @@ from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
 from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR
+from WebSpider.models import CoinLog
 from logger import logger
 
 
@@ -208,10 +209,9 @@ class Spider:
             item_probability = kwargs.get('item_probability')
             typ = _random(corn_types if not limit else corn_types[:limit], item_probability)
             self.click(typ, wait=class_name)
-            if 'kline' in self.dr.current_url:
-                coin_log = os.path.join(LOG_DIR, 'coin.txt')
-                with open(coin_log, 'a') as f:
-                    f.write(f"{self}, {self.dr.current_url}, {datetime.now()}\n")
+            current_url = self.dr.current_url
+            if 'kline' in current_url or 'trade' in current_url:
+                CoinLog.add_log(symbols=urlparse(current_url).path)
 
     def random_click_many(self, class_name, min_iter=1, max_iter=5, limit=None, **kwargs):
         for _ in range(0, random.randint(min_iter, max_iter)):

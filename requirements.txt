@@ -8,3 +8,5 @@ selenium==3.141.0
 typing-extensions==3.10.0.0
 urllib3==1.26.4
 zipp==3.4.1
+sqlalchemy==1.1.14
+pymysql==0.7.11
