@@ -1,7 +1,0 @@
-{
-    'host': "47.119.153.218",
-    'port': 3306,
-    'user': "root",
-    'password': "zbsim",
-    'db': "zbsim",
-}
