@@ -19,7 +19,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 # 代理设置
 PROXY = {
     'IP': '127.0.0.1',
-    'PORT': '7891',
+    'PORT': '1080',
     'PROTOCOL': 'socks5'
 }
 
@@ -42,3 +42,12 @@ RUNNING_TIMES = 10
 
 # 是否使用窗口模式 True/False
 USE_WINDOW = True
+
+# 数据库
+DATABASE = {
+    'host': "",
+    'port': 3306,
+    'user': "",
+    'password': "",
+    'db': "",
+}
