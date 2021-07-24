@@ -5,6 +5,7 @@
 @time:      2021/05/18
 """
 import os
+import json
 
 # 项目路径
 PROJECT_DIR = os.path.dirname(__file__)
@@ -44,10 +45,14 @@ RUNNING_TIMES = 10
 USE_WINDOW = True
 
 # 数据库
-DATABASE = {
-    'host': "",
-    'port': 3306,
-    'user': "",
-    'password': "",
-    'db': "",
-}
+if os.path.exists("mysql.json"):
+    with open("mysql.json", 'r') as f:
+        DATABASE = json.loads(f.read())
+else:
+    DATABASE = {
+        'host': "",
+        'port': 3306,
+        'user': "",
+        'password': "",
+        'db': "",
+    }

@@ -22,6 +22,7 @@ from selenium.webdriver.support.ui import WebDriverWait as Wait
 from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR
 from WebSpider.models import CoinLog
 from logger import logger
+from WebSpider.proxy import proxy_server
 
 
 class PageTree:
@@ -121,7 +122,11 @@ class Spider:
             condition.presence_of_element_located((by, value)), message="元素加载失败")
 
     def set_proxy(self):
-        self.option.add_argument(f"--proxy-server={PROXY['PROTOCOL']}://{PROXY['IP']}:{PROXY['PORT']}")
+        proxy = proxy_server.get_proxy()
+        if proxy:
+            self.option.add_argument(f"--proxy-server=https://{proxy['ip']}:{proxy['port']}")
+        else:
+            self.option.add_argument(f"--proxy-server={PROXY['PROTOCOL']}://{PROXY['IP']}:{PROXY['PORT']}")
 
     def load_plugin(self):
         for path in CHROME_PLUGIN_DIR:
