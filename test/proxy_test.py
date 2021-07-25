@@ -7,11 +7,11 @@ import sys
 
 import requests
 
-from WebSpider.proxy import proxy_server
 from settings import PROJECT_DIR
 
-
 sys.path.append(PROJECT_DIR)
+
+from WebSpider.proxy import proxy_server
 
 
 def main():
