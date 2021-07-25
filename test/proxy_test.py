@@ -20,7 +20,7 @@ def main():
                       ", like Gecko) Mobile/14G60 MicroMessenger/6.5.19 NetType/4G Language/zh_TW",
     }
     session = requests.session()
-    url = 'http://myip.ipip.net'
+    url = 'http://myip.top'
     print('========== 本机ip ==========')
     resp1 = session.get(url)
     print(resp1.text)
