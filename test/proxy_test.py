@@ -4,12 +4,11 @@ Date     : 2021/7/25 12:01
 Email    : vagaab@foxmail.com
 """
 import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import requests
-
-from settings import PROJECT_DIR
-
-sys.path.append(PROJECT_DIR)
 
 from WebSpider.proxy import proxy_server
 
