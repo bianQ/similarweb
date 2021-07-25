@@ -3,9 +3,15 @@ Author   : Alan
 Date     : 2021/7/25 12:01
 Email    : vagaab@foxmail.com
 """
+import sys
+
 import requests
 
 from WebSpider.proxy import proxy_server
+from settings import PROJECT_DIR
+
+
+sys.path.append(PROJECT_DIR)
 
 
 def main():
