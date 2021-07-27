@@ -130,7 +130,7 @@ class Spider:
         proxy = proxy_server.get_proxy()
         if proxy:
             self.logger.info(f"代理IP：{str(proxy)}")
-            self.option.add_argument(f"--proxy-server=https://{proxy['ip']}:{proxy['port']}")
+            self.option.add_argument(f"--proxy-server=http://{proxy['ip']}:{proxy['port']}")
         else:
             self.option.add_argument(f"--proxy-server={PROXY['PROTOCOL']}://{PROXY['IP']}:{PROXY['PORT']}")
 
