@@ -27,7 +27,7 @@ def main():
     print('========== 代理ip ==========')
     proxy = proxy_server.get_proxy()
     print(f"代理配置 {proxy}")
-    resp2 = session.get(url, headers=headers, proxies={'https': f"https://{proxy['ip']}:{proxy['port']}"})
+    resp2 = session.get(url, headers=headers, proxies={'https': f"http://{proxy['ip']}:{proxy['port']}"})
     print(resp2.text)
 
 
