@@ -19,10 +19,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
-from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR
+from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR, REFER_URLS
 from WebSpider.models import CoinLog
 from logger import logger
-from WebSpider.proxy import proxy_server
 
 
 class PageTree:
@@ -89,6 +88,10 @@ class Spider:
             self.option.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML'
                                      ', like Gecko) Chrome/90.0.4430.212 Safari/537.36')
 
+        if random.randint(0, 9) < 2:
+            refer = random.choice(REFER_URLS)
+            self.option.add_argument(f'-Referer={refer}')
+
         self.dr = webdriver.Chrome(executable_path=CHROME_PATH, options=self.option)
         try:
             self.dr.set_page_load_timeout(timeout)
@@ -122,6 +125,8 @@ class Spider:
             condition.presence_of_element_located((by, value)), message="元素加载失败")
 
     def set_proxy(self):
+        from WebSpider.proxy import proxy_server
+
         proxy = proxy_server.get_proxy()
         if proxy:
             self.option.add_argument(f"--proxy-server=https://{proxy['ip']}:{proxy['port']}")

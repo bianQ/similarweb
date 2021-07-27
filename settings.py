@@ -56,3 +56,19 @@ else:
         'password': "",
         'db': "",
     }
+
+
+# ============== 第三方代理设置 ==============
+# 获取 ip 的链接
+GET_IP_URL = "http://tiqu.ipidea.io:81/abroad?num=1&type=2&lb=1&sb=0&flow=1&regions=ae&port=1&n=0"
+# 设置白名单的链接
+WHITE_URL = "http://api.ipidea.net/index/index/save_white?neek=53693&appkey=9a847c6eaa1d6a2998196f330c67ed47&white="
+
+# refer 设置
+REFER_URLS = [
+    "https://coinmarketcap.com/",
+    "https://coingecko.com/",
+    "https://feixiaohao.cc/"
+    "https://hypertechgrp.com/",
+    "https://hokk.finance/"
+]
