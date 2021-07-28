@@ -225,10 +225,10 @@ class Spider:
             self.click(typ, wait=class_name)
             current_url = self.dr.current_url
             if 'kline' in current_url or 'trade' in current_url:
-                # coin_log = os.path.join(LOG_DIR, 'coin_log.txt')
-                # with open(coin_log, 'a') as f:
-                #     data = json.dumps({'symbols': urlparse(current_url).path})
-                #     f.write(data + "\n")
+                coin_log = os.path.join(LOG_DIR, 'coin_log.txt')
+                with open(coin_log, 'a') as f:
+                    data = json.dumps({'symbols': urlparse(current_url).path})
+                    f.write(data + "\n")
                 CoinLog.add_log(symbols=urlparse(current_url).path)
 
     def random_click_many(self, class_name, min_iter=1, max_iter=5, limit=None, **kwargs):
