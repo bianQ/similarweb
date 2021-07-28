@@ -7,6 +7,7 @@
 import random
 import time
 import os
+import json
 from typing import Sequence
 from datetime import datetime
 from urllib.parse import parse_qs, urlparse
@@ -73,7 +74,7 @@ def sleep(min_second=3, max_second=7):
 
 class Spider:
 
-    def __init__(self, use_plugin=False, use_proxy=False, load_img=True, timeout=60, duration=(4, 6),
+    def __init__(self, use_plugin=False, use_proxy=False, load_img=True, timeout=60, duration=(1, 2),
                  window=True):
         self.logger = logger
         self.option = Options()
@@ -87,7 +88,9 @@ class Spider:
             self.option.add_argument('--disable-gpu')
             self.option.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML'
                                      ', like Gecko) Chrome/90.0.4430.212 Safari/537.36')
-
+        if not load_img:
+            self.option.add_argument('blink-settings=imagesEnabled=false')
+        # 设置 Referer，配置不生效
         if random.randint(0, 9) < 2:
             refer = random.choice(REFER_URLS)
             self.option.add_argument(f'-Referer={refer}')
@@ -222,6 +225,10 @@ class Spider:
             self.click(typ, wait=class_name)
             current_url = self.dr.current_url
             if 'kline' in current_url or 'trade' in current_url:
+                # coin_log = os.path.join(LOG_DIR, 'coin_log.txt')
+                # with open(coin_log, 'a') as f:
+                #     data = json.dumps({'symbols': urlparse(current_url).path})
+                #     f.write(data + "\n")
                 CoinLog.add_log(symbols=urlparse(current_url).path)
 
     def random_click_many(self, class_name, min_iter=1, max_iter=5, limit=None, **kwargs):

@@ -10,14 +10,20 @@ from settings import GET_IP_URL, WHITE_URL
 
 
 def get_my_ip():
-    resp = requests.get('http://myip.top')
-    return resp.json().get('ip')
+    try:
+        resp = requests.get('http://myip.top', timeout=2)
+        return resp.json().get('ip')
+    except Exception as e:
+        print(e)
 
 
 class Proxy:
 
     def __init__(self):
         self.sessoin = requests.session()
+
+        if not WHITE_URL or not GET_IP_URL:
+            raise ValueError("缺少代理配置")
         # 设置白名单
         my_ip = get_my_ip()
         if my_ip:

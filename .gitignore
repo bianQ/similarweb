@@ -132,4 +132,4 @@ dmypy.json
 
 logs/
 
-mysql.json
+env.json

@@ -25,7 +25,7 @@ PROXY = {
 }
 
 # 线程数量
-THREAD_MAX_NUM = 5
+THREAD_MAX_NUM = 25
 
 # 浏览器插件配置
 CHROME_PLUGIN_DIR = []
@@ -33,22 +33,27 @@ LOAD_PLUGIN = True
 
 # 主页
 START_URLS = [
-    'https://zb.com/cn/',
-    'https://zb.com/en/',
-    'https://zb.com/kr/'
+    'https://www.zb.com/cn/',
+    'https://www.zb.com/en/',
+    'https://www.zb.com/kr/'
 ]
 
 # 运行次数
-RUNNING_TIMES = 10
+RUNNING_TIMES = 1200000
 
 # 是否使用窗口模式 True/False
-USE_WINDOW = True
+USE_WINDOW = False
+
+# 是否加载图片
+LOAD_IMAGE = True
 
 # 数据库
-if os.path.exists("mysql.json"):
-    with open("mysql.json", 'r') as f:
-        DATABASE = json.loads(f.read())
+if os.path.exists("env.json"):
+    with open("env.json", 'r') as f:
+        ENV = json.loads(f.read())
+        DATABASE = ENV["DATABASE"]
 else:
+    ENV = {}
     DATABASE = {
         'host': "",
         'port': 3306,
@@ -60,9 +65,9 @@ else:
 
 # ============== 第三方代理设置 ==============
 # 获取 ip 的链接
-GET_IP_URL = "http://tiqu.ipidea.io:81/abroad?num=1&type=2&lb=1&sb=0&flow=1&regions=ae&port=1&n=0"
+GET_IP_URL = ENV.get("GET_IP_URL")
 # 设置白名单的链接
-WHITE_URL = "http://api.ipidea.net/index/index/save_white?neek=53693&appkey=9a847c6eaa1d6a2998196f330c67ed47&white="
+WHITE_URL = ENV.get("WHITE_URL")
 
 # refer 设置
 REFER_URLS = [
