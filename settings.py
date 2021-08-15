@@ -9,6 +9,8 @@ import json
 
 # 项目路径
 PROJECT_DIR = os.path.dirname(__file__)
+#
+STATIC_DIR = os.path.join(PROJECT_DIR, 'static')
 
 # 加载配置文件
 if os.path.exists("env.json"):
@@ -70,6 +72,10 @@ DATABASE = ENV.get("DATABASE", DATABASE)
 GET_IP_URL = ENV.get("GET_IP_URL")
 # 设置白名单的链接
 WHITE_URL = ENV.get("WHITE_URL")
+# 代理账号
+USER = ENV.get("USER", "")
+# 密码
+PWD = ENV.get("PWD", "")
 
 # refer 设置，暂时没用
 REFER_URLS = [

@@ -11,6 +11,8 @@ import json
 from typing import Sequence
 from datetime import datetime
 from urllib.parse import parse_qs, urlparse
+import string
+import zipfile
 
 from retry import retry
 from selenium import webdriver
@@ -20,16 +22,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
-from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR, REFER_URLS
+from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR, REFER_URLS, USER, PWD, STATIC_DIR
+
 from WebSpider.models import CoinLog
 from logger import logger
-
-
-class PageTree:
-
-    nav = {
-        ''
-    }
 
 
 def _random(data: Sequence, item_probability: dict = None):
@@ -79,10 +75,16 @@ class Spider:
         self.logger = logger
         self.option = Options()
         self.option.add_experimental_option('excludeSwitches', ['enable-logging'])
-        if use_proxy:
-            self.set_proxy()
+        self.proxyauth_plugin_path = self.create_proxyauth_extension(
+            proxy_host="as.ipidea.io",
+            proxy_port=2333,
+            proxy_username=USER,
+            proxy_password=PWD,
+        )
         if use_plugin:
             self.load_plugin()
+        if use_proxy:
+            self.set_proxy()
         if not window:
             self.option.add_argument('--headless')
             self.option.add_argument('--disable-gpu')
@@ -113,6 +115,7 @@ class Spider:
         self.start_time = None
         self.home = _random(START_URLS)
         self.main_path = urlparse(self.home).path
+        # time.sleep(3)
         # 指定运行时长
         self.plan_duration = _random(duration) * 60
         # 访问过的链接
@@ -127,7 +130,7 @@ class Spider:
         Wait(self.dr, 30).until(
             condition.presence_of_element_located((by, value)), message="元素加载失败")
 
-    def set_proxy(self):
+    def set_proxy0(self):
         from WebSpider.proxy import proxy_server
 
         proxy = proxy_server.get_proxy()
@@ -137,9 +140,87 @@ class Spider:
         else:
             self.option.add_argument(f"--proxy-server={PROXY['PROTOCOL']}://{PROXY['IP']}:{PROXY['PORT']}")
 
+    def set_proxy(self):
+        # proxyauth_plugin_path = self.create_proxyauth_extension(
+        #     proxy_host="as.ipidea.io",
+        #     proxy_port=2333,
+        #     proxy_username=USER,
+        #     proxy_password=PWD
+        # )
+        self.option.add_extension(os.path.join(STATIC_DIR, 'vimm_chrome_proxyauth_plugin.zip'))
+
     def load_plugin(self):
         for path in CHROME_PLUGIN_DIR:
             self.option.add_argument(fr'load-extension={path}')
+
+    def create_proxyauth_extension(self, proxy_host, proxy_port, proxy_username, proxy_password,
+                               scheme='http', plugin_path=None):
+        if plugin_path is None:
+            # 插件地址
+            plugin_path = 'vimm_chrome_proxyauth_plugin.zip'
+        manifest_json = """
+            {
+                "version": "1.0.0",
+                "manifest_version": 2,
+                "name": "Chrome Proxy",
+                "permissions": [
+                    "proxy",
+                    "tabs",
+                    "unlimitedStorage",
+                    "storage",
+                    "<all_urls>",
+                    "webRequest",
+                    "webRequestBlocking"
+                ],
+                "background": {
+                    "scripts": ["background.js"]
+                },
+                "minimum_chrome_version":"22.0.0"
+            }
+            """
+
+        background_js = string.Template(
+            """
+            var config = {
+                    mode: "fixed_servers",
+                    rules: {
+                      singleProxy: {
+                        scheme: "${scheme}",
+                        host: "${host}",
+                        port: parseInt(${port})
+                      },
+                      bypassList: ["foobar.com", "file.dd.net", "accounts.google.com"]
+                    }
+                  };
+
+            chrome.proxy.settings.set({value: config, scope: "regular"}, function() {});
+
+            function callbackFn(details) {
+                return {
+                    authCredentials: {
+                        username: "${username}",
+                        password: "${password}"
+                    }
+                };
+            }
+
+            chrome.webRequest.onAuthRequired.addListener(
+                        callbackFn,
+                        {urls: ["<all_urls>"]},
+                        ['blocking']
+            );
+            """
+        ).substitute(
+            host=proxy_host,
+            port=proxy_port,
+            username=proxy_username,
+            password=proxy_password,
+            scheme=scheme,
+        )
+        with zipfile.ZipFile(plugin_path, 'w') as zp:
+            zp.writestr("manifest.json", manifest_json)
+            zp.writestr("background.js", background_js)
+        return plugin_path
 
     @property
     def is_alive(self):
@@ -207,7 +288,7 @@ class Spider:
             corn = self.dr.find_element_by_class_name(item_class)
             self.click(corn, wait=item_class)
             time.sleep(2)
-            self.random_click_many('coin-item', min_iter=3, max_iter=5, limit=20, item_probability=item_probability)
+            self.random_click_many('coin-item', min_iter=3, max_iter=15, limit=30, item_probability=item_probability)
 
     @sleep()
     def to_home(self, path):
