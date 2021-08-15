@@ -2,6 +2,9 @@
 
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+# 解决打包后执行 exe 出现 unknown encoding: idna
+import encodings.idna
+
 import click
 
 from settings import THREAD_MAX_NUM, RUNNING_TIMES, USE_WINDOW, LOAD_PLUGIN, LOAD_IMAGE
