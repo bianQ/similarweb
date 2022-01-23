@@ -17,12 +17,13 @@ import zipfile
 from retry import retry
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import WebDriverException, TimeoutException
+from selenium.common.exceptions import WebDriverException, TimeoutException, ElementNotInteractableException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
-from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR, REFER_URLS, USER, PWD, STATIC_DIR
+from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR, REFER_URLS, USER, PWD, STATIC_DIR, \
+    SLEEP_TIME_MIN, SLEEP_TIME_MAX, SCROLL_TIME_MAX
 
 from WebSpider.models import CoinLog
 from logger import logger
@@ -48,7 +49,7 @@ def _random(data: Sequence, item_probability: dict = None):
     return random.choice(new_data)
 
 
-def sleep(min_second=3, max_second=7):
+def sleep(min_second=SLEEP_TIME_MIN, max_second=SLEEP_TIME_MAX):
     def decorate(fn):
         def wrapper(self, *args, **kwargs):
             second = random.randint(min_second, max(min_second, max_second))
@@ -130,17 +131,18 @@ class Spider:
         Wait(self.dr, 30).until(
             condition.presence_of_element_located((by, value)), message="元素加载失败")
 
-    def set_proxy0(self):
-        from WebSpider.proxy import proxy_server
-
-        proxy = proxy_server.get_proxy()
+    def set_proxy(self):
+        # from WebSpider.proxy import proxy_server
+        #
+        # proxy = proxy_server.get_proxy()
+        proxy = False
         if proxy:
             self.logger.info(f"代理IP：{str(proxy)}")
             self.option.add_argument(f"--proxy-server=http://{proxy['ip']}:{proxy['port']}")
         else:
             self.option.add_argument(f"--proxy-server={PROXY['PROTOCOL']}://{PROXY['IP']}:{PROXY['PORT']}")
 
-    def set_proxy(self):
+    def set_proxy_by_plugin(self):
         # proxyauth_plugin_path = self.create_proxyauth_extension(
         #     proxy_host="as.ipidea.io",
         #     proxy_port=2333,
@@ -230,7 +232,7 @@ class Spider:
     def get(self, url):
         self.dr.get(url)
 
-    @sleep(max_second=2)
+    @sleep(max_second=SCROLL_TIME_MAX)
     def _scroll(self, height):
         js = f"var q=document.documentElement.scrollTop={height}"
         self.dr.execute_script(js)
@@ -264,39 +266,40 @@ class Spider:
 
     @sleep()
     def click_nav(self):
-        nav_class = 'nav-item'
-        navs = self.dr.find_elements_by_class_name(nav_class)[:6]
-        nav_element = _random(navs, {1: 0.05, 2: 0.9, 5: 0.05})
+        if len(self.dr.window_handles) > 1:
+            self.dr.close()
+            self.dr.switch_to.window(self.dr.window_handles[0])
+        nav_path = '//ul[@class="header-ul"]/li'
+        navs = self.dr.find_elements_by_xpath(nav_path)
+        nav_element = _random(navs, item_probability={3: 1})
         self.logger.info(f"{self}：选择主导航 {nav_element.text}")
-        sub_nav_class = 'menu-link'
-        sub_navs = nav_element.find_elements_by_class_name(sub_nav_class)
-        if sub_navs:
+        self.click(nav_element, wait="header-ul")
+        nav_text = nav_element.text
+        # 子导航
+        sub_nav_id = None
+        sub_nav_spans = self.dr.find_elements_by_xpath(f"{nav_path}//span")
+        for span in sub_nav_spans:
+            if span.text == nav_text:
+                sub_nav_id = span.get_attribute("aria-controls")
+        if sub_nav_id:
+            sub_nav_path = f'//ul[@id="{sub_nav_id}"]/li'
+            sub_navs = self.dr.find_elements_by_xpath(sub_nav_path)
             # 选择交易时，指定子导航的点击概率
-            trade_nav = nav_element.find_elements_by_class_name("trade-menu")
-            item_probability = {1: 0.85} if trade_nav else None
+            # item_probability = {0: 0.85} if nav_text == "交易" else None
+            item_probability = {0: 1}
             nav_to_click = _random(sub_navs, item_probability)
-            self.click(nav_element, wait=nav_class)
-        else:
-            nav_to_click = nav_element
-        self.logger.info(f"{self}：点击导航'{nav_to_click.text}', {nav_to_click.get_attribute('class')}")
-        self.click(nav_to_click, wait=sub_nav_class)
+            nav_text = nav_to_click.text
+            self.click(nav_to_click)
+        self.logger.info(f"{self}：点击导航'{nav_text}'")
 
     @sleep()
-    def click_corn_item(self, item_probability=None):
-        if 'markets' not in self.dr.current_url:
-            item_class = 'trade-pair'
-            corn = self.dr.find_element_by_class_name(item_class)
-            self.click(corn, wait=item_class)
-            time.sleep(2)
-            self.random_click_many('coin-item', min_iter=3, max_iter=15, limit=30, item_probability=item_probability)
+    def to_home(self):
+        try:
+            self.dr.find_element_by_class_name("header-logo-div").click()
+        except ElementNotInteractableException:
+            self.get(self.home)
 
-    @sleep()
-    def to_home(self, path):
-        home_class = 'logo-wrap' if path not in ['lever-kline', 'kline'] else 'menu-logo'
-        home = self.dr.find_element_by_class_name(home_class)
-        self.click(home)
-
-    @sleep()
+    @sleep(min_second=2, max_second=5)
     @retry(exceptions=WebDriverException, tries=3, delay=2, logger=logger)
     def random_click(self, class_name, limit=None, **kwargs):
         corn_types = self.dr.find_elements_by_class_name(class_name)
@@ -305,19 +308,17 @@ class Spider:
             typ = _random(corn_types if not limit else corn_types[:limit], item_probability)
             self.click(typ, wait=class_name)
             current_url = self.dr.current_url
-            if 'kline' in current_url or 'trade' in current_url:
-                coin_log = os.path.join(LOG_DIR, 'coin_log.txt')
-                with open(coin_log, 'a') as f:
-                    data = json.dumps({'symbols': urlparse(current_url).path})
-                    f.write(data + "\n")
-                CoinLog.add_log(symbols=urlparse(current_url).path)
+            coin_log = os.path.join(LOG_DIR, 'coin_log.txt')
+            with open(coin_log, 'a') as f:
+                data = json.dumps({'symbols': urlparse(current_url).path})
+                f.write(data + "\n")
+            CoinLog.add_log(symbols=urlparse(current_url).path)
 
     def random_click_many(self, class_name, min_iter=1, max_iter=5, limit=None, **kwargs):
         for _ in range(0, random.randint(min_iter, max_iter)):
             self.random_click(class_name, limit, **kwargs)
             # 记录交易页访问币种数量
-            if 'kline' in self.dr.current_url:
-                self.view_urls.add(self.dr.current_url)
+            self.view_urls.add(self.dr.current_url)
 
     def run(self):
         if not self.is_alive:
@@ -339,30 +340,29 @@ class Spider:
                     f.write(f"{self}, {view_url_count}, {self.start_time}\n")
 
     def event(self):
-        if len(self.dr.window_handles) > 1:
-            self.dr.switch_to.window(self.dr.window_handles[0])
-        if 'kline' in self.dr.current_url:
-            self.logger.info(f"{self}：open kline {self.dr.current_url}")
         self.click_nav()
+        if len(self.dr.window_handles) > 1:
+            self.dr.switch_to.window(self.dr.window_handles[-1])
+        try:
+            self.dr.find_element_by_class_name("ex-btn5").click()
+        except ElementNotInteractableException:
+            pass
         parser = urlparse(self.dr.current_url)
-        path = parser.path.replace(self.main_path, '').split('/')[0]
-        if path == 'markets':
+        if parser.path in ['/markets', '/otc/trade']:
             self.scroll()
-            # 切换币分区
-            self.random_click_many('el-tabs__item', max_iter=2, limit=None)
-            # 选择币种
-            self.random_click('market-body-item')
-            self.click_corn_item()
-            self.to_home(path)
-        elif path == 'trade':
-            self.random_click_many('tabs-item', max_iter=2, limit=4)
-            self.random_click_many('coin-item', max_iter=15)
-        elif path in ['lever-kline', 'kline']:
-            self.click_corn_item(item_probability={1: 0.15, 2: 0.15})
-            self.to_home(path)
+        elif parser.path.startswith("/currencyExchangeTwo"):
+            self.random_click_many('list-tbody', min_iter=3, max_iter=10, limit=15)
+        elif parser.path.startswith("/currencyExchange"):
+            time.sleep(2)
+            self.to_home()
+        elif parser.path.startswith("/contract/exchange"):
+            self.random_click_many('contract-list-tbody', min_iter=3, max_iter=10, limit=15)
+        else:
+            self.scroll()
+            self.to_home()
 
     def loop_event(self):
         while self.duration < self.plan_duration:
             self.event()
-            # parse = urlparse(self.dr.current_url)
-            # self.view_urls.add(f"{parse.netloc}/{parse.path}")
+            parse = urlparse(self.dr.current_url)
+            self.view_urls.add(f"{parse.netloc}/{parse.path}")

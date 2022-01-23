@@ -13,8 +13,9 @@ PROJECT_DIR = os.path.dirname(__file__)
 STATIC_DIR = os.path.join(PROJECT_DIR, 'static')
 
 # 加载配置文件
-if os.path.exists("env.json"):
-    with open("env.json", 'r') as f:
+ENV_FILE_PATH = os.path.join(PROJECT_DIR, "env.json")
+if os.path.exists(ENV_FILE_PATH):
+    with open(ENV_FILE_PATH, 'r') as f:
         ENV = json.loads(f.read())
 else:
     ENV = {}
@@ -26,10 +27,16 @@ CHROME_PATH = ENV.get("CHROME_PATH")
 LOG_DIR = os.path.join(PROJECT_DIR, 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
 
+# 程序休眠时间
+SLEEP_TIME_MIN = ENV.get("SLEEP_TIME_MIN", 1)
+SLEEP_TIME_MAX = ENV.get("SLEEP_TIME_MAX", 3)
+# 滚动页面最大间隔时间，最小时间默认为 SLEEP_TIME_MIN
+SCROLL_TIME_MAX = ENV.get("SCROLL_TIME_MAX", 1)
+
 # 代理设置
 PROXY = {
     'IP': '127.0.0.1',
-    'PORT': '1080',
+    'PORT': '7891',
     'PROTOCOL': 'socks5'
 }
 
@@ -42,9 +49,7 @@ LOAD_PLUGIN = True
 
 # 主页
 START_URLS = [
-    'https://www.zb.com/cn/',
-    'https://www.zb.com/en/',
-    'https://www.zb.com/kr/'
+    'https://www.hotcoin.com/',
 ]
 START_URLS = ENV.get("START_URLS", START_URLS)
 
