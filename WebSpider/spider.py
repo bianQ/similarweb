@@ -17,7 +17,8 @@ import zipfile
 from retry import retry
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import WebDriverException, TimeoutException, ElementNotInteractableException
+from selenium.common.exceptions import WebDriverException, TimeoutException, ElementNotInteractableException, \
+    NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
@@ -271,7 +272,7 @@ class Spider:
             self.dr.switch_to.window(self.dr.window_handles[0])
         nav_path = '//ul[@class="header-ul"]/li'
         navs = self.dr.find_elements_by_xpath(nav_path)
-        nav_element = _random(navs, item_probability={3: 1})
+        nav_element = _random(navs, item_probability={1: 0.2, 2: 0.4, 3: 0.2})
         self.logger.info(f"{self}：选择主导航 {nav_element.text}")
         self.click(nav_element, wait="header-ul")
         nav_text = nav_element.text
@@ -285,8 +286,7 @@ class Spider:
             sub_nav_path = f'//ul[@id="{sub_nav_id}"]/li'
             sub_navs = self.dr.find_elements_by_xpath(sub_nav_path)
             # 选择交易时，指定子导航的点击概率
-            # item_probability = {0: 0.85} if nav_text == "交易" else None
-            item_probability = {0: 1}
+            item_probability = {0: 0.85} if nav_text == "交易" else None
             nav_to_click = _random(sub_navs, item_probability)
             nav_text = nav_to_click.text
             self.click(nav_to_click)
@@ -296,7 +296,7 @@ class Spider:
     def to_home(self):
         try:
             self.dr.find_element_by_class_name("header-logo-div").click()
-        except ElementNotInteractableException:
+        except (ElementNotInteractableException, NoSuchElementException):
             self.get(self.home)
 
     @sleep(min_second=2, max_second=5)
@@ -309,10 +309,11 @@ class Spider:
             self.click(typ, wait=class_name)
             current_url = self.dr.current_url
             coin_log = os.path.join(LOG_DIR, 'coin_log.txt')
+            symbols = urlparse(current_url).path.split('/')[-1]
             with open(coin_log, 'a') as f:
-                data = json.dumps({'symbols': urlparse(current_url).path})
+                data = json.dumps({'symbols': symbols})
                 f.write(data + "\n")
-            CoinLog.add_log(symbols=urlparse(current_url).path)
+            CoinLog.add_log(symbols=symbols)
 
     def random_click_many(self, class_name, min_iter=1, max_iter=5, limit=None, **kwargs):
         for _ in range(0, random.randint(min_iter, max_iter)):
@@ -345,7 +346,7 @@ class Spider:
             self.dr.switch_to.window(self.dr.window_handles[-1])
         try:
             self.dr.find_element_by_class_name("ex-btn5").click()
-        except ElementNotInteractableException:
+        except (ElementNotInteractableException, NoSuchElementException):
             pass
         parser = urlparse(self.dr.current_url)
         if parser.path in ['/markets', '/otc/trade']:
