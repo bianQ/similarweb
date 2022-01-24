@@ -86,7 +86,8 @@ class Spider:
         if use_plugin:
             self.load_plugin()
         if use_proxy:
-            self.set_proxy()
+            # self.set_proxy()
+            self.set_proxy_by_plugin()
         if not window:
             self.option.add_argument('--headless')
             self.option.add_argument('--disable-gpu')
