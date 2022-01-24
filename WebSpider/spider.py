@@ -24,7 +24,7 @@ from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
 from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR, REFER_URLS, USER, PWD, STATIC_DIR, \
-    SLEEP_TIME_MIN, SLEEP_TIME_MAX, SCROLL_TIME_MAX
+    SLEEP_TIME_MIN, SLEEP_TIME_MAX, SCROLL_TIME_MAX, USE_THIRD_PROXY
 
 from WebSpider.models import CoinLog
 from logger import logger
@@ -133,11 +133,13 @@ class Spider:
             condition.presence_of_element_located((by, value)), message="元素加载失败")
 
     def set_proxy(self):
-        # from WebSpider.proxy import proxy_server
-        #
-        # proxy = proxy_server.get_proxy()
-        proxy = False
-        if proxy:
+        if USE_THIRD_PROXY:
+            from WebSpider.proxy import proxy_server
+
+            proxy = proxy_server.get_proxy()
+            if not proxy:
+                self.logger.error("第三方代理获取失败")
+                raise ValueError("第三方代理获取失败")
             self.logger.info(f"代理IP：{str(proxy)}")
             self.option.add_argument(f"--proxy-server=http://{proxy['ip']}:{proxy['port']}")
         else:
