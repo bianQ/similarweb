@@ -302,9 +302,16 @@ class Spider:
         except (ElementNotInteractableException, NoSuchElementException):
             self.get(self.home)
 
+    def confirm_protocol(self):
+        try:
+            self.dr.find_element_by_class_name("ex-btn5").click()
+        except (ElementNotInteractableException, NoSuchElementException):
+            pass
+
     @sleep(min_second=2, max_second=5)
     @retry(exceptions=WebDriverException, tries=3, delay=2, logger=logger)
     def random_click(self, class_name, limit=None, **kwargs):
+        self.confirm_protocol()
         corn_types = self.dr.find_elements_by_class_name(class_name)
         if corn_types:
             item_probability = kwargs.get('item_probability')
@@ -358,10 +365,7 @@ class Spider:
         self.click_nav()
         if len(self.dr.window_handles) > 1:
             self.dr.switch_to.window(self.dr.window_handles[-1])
-        try:
-            self.dr.find_element_by_class_name("ex-btn5").click()
-        except (ElementNotInteractableException, NoSuchElementException):
-            pass
+        self.confirm_protocol()
         parser = urlparse(self.dr.current_url)
         if parser.path in ['/markets', '/otc/trade']:
             self.scroll()
