@@ -24,7 +24,7 @@ from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
 from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR, REFER_URLS, USER, PWD, STATIC_DIR, \
-    SLEEP_TIME_MIN, SLEEP_TIME_MAX, SCROLL_TIME_MAX, USE_THIRD_PROXY, WAIT_DURATION
+    SLEEP_TIME_MIN, SLEEP_TIME_MAX, SCROLL_TIME_MAX, USE_THIRD_PROXY, WAIT_DURATION, MIN_RUN_SECONDS, MAX_RUN_SECONDS
 
 from WebSpider.models import CoinLog
 from logger import logger
@@ -72,8 +72,8 @@ def sleep(min_second=SLEEP_TIME_MIN, max_second=SLEEP_TIME_MAX):
 
 class Spider:
 
-    def __init__(self, use_plugin=False, use_proxy=False, load_img=True, timeout=60, duration=(1, 2),
-                 window=True):
+    def __init__(self, use_plugin=False, use_proxy=False, load_img=True, timeout=60,
+                 duration=(MIN_RUN_SECONDS, MAX_RUN_SECONDS), window=True):
         self.logger = logger
         self.option = Options()
         self.option.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -120,7 +120,7 @@ class Spider:
         self.main_path = urlparse(self.home).path
         # time.sleep(3)
         # 指定运行时长
-        self.plan_duration = _random(duration) * 60
+        self.plan_duration = _random(duration)
         # 访问过的链接
         self.view_urls = set()
 
@@ -305,6 +305,7 @@ class Spider:
     def confirm_protocol(self):
         try:
             self.dr.find_element_by_class_name("ex-btn5").click()
+            self.dr.find_element_by_class_name("less-btn1").click()
         except (ElementNotInteractableException, NoSuchElementException):
             pass
 
@@ -372,12 +373,16 @@ class Spider:
         elif parser.path.startswith("/currencyExchangeTwo"):
             self.random_click_many('list-tbody', min_iter=3, max_iter=10, limit=15)
             self.to_home()
+            time.sleep(2)
+            raise TimeoutException()
         elif parser.path.startswith("/currencyExchange"):
             time.sleep(2)
             self.to_home()
         elif parser.path.startswith("/contract/exchange"):
             self.random_click_many('contract-list-tbody', min_iter=3, max_iter=10, limit=15)
             self.to_home()
+            time.sleep(2)
+            raise TimeoutException()
         else:
             self.scroll()
             self.to_home()
