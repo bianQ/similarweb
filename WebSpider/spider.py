@@ -24,7 +24,7 @@ from selenium.webdriver.support import expected_conditions as condition
 from selenium.webdriver.support.ui import WebDriverWait as Wait
 
 from settings import CHROME_PATH, START_URLS, PROXY, CHROME_PLUGIN_DIR, LOG_DIR, REFER_URLS, USER, PWD, STATIC_DIR, \
-    SLEEP_TIME_MIN, SLEEP_TIME_MAX, SCROLL_TIME_MAX
+    SLEEP_TIME_MIN, SLEEP_TIME_MAX, SCROLL_TIME_MAX, WAIT_DURATION
 
 from WebSpider.models import CoinLog
 from logger import logger
@@ -315,11 +315,22 @@ class Spider:
                 f.write(data + "\n")
             CoinLog.add_log(symbols=symbols)
 
-    def random_click_many(self, class_name, min_iter=1, max_iter=5, limit=None, **kwargs):
-        for _ in range(0, random.randint(min_iter, max_iter)):
+    def random_click_many(self, class_name, min_iter=1, max_iter=5, limit=None, duration=WAIT_DURATION, **kwargs):
+        random_times = random.randint(min_iter, max_iter)
+        stop = False
+        random_counts = 0
+        start_time = time.time()
+        while not stop:
             self.random_click(class_name, limit, **kwargs)
             # 记录交易页访问币种数量
             self.view_urls.add(self.dr.current_url)
+            random_counts += 1
+            random_duration = time.time() - start_time
+            if duration:
+                if random_duration > duration:
+                    stop = True
+            elif random_counts >= random_times:
+                stop = True
 
     def run(self):
         if not self.is_alive:
@@ -353,11 +364,13 @@ class Spider:
             self.scroll()
         elif parser.path.startswith("/currencyExchangeTwo"):
             self.random_click_many('list-tbody', min_iter=3, max_iter=10, limit=15)
+            self.to_home()
         elif parser.path.startswith("/currencyExchange"):
             time.sleep(2)
             self.to_home()
         elif parser.path.startswith("/contract/exchange"):
             self.random_click_many('contract-list-tbody', min_iter=3, max_iter=10, limit=15)
+            self.to_home()
         else:
             self.scroll()
             self.to_home()

@@ -90,3 +90,5 @@ REFER_URLS = [
     "https://hypertechgrp.com/",
     "https://hokk.finance/"
 ]
+# 交易页面停留时间，单位秒
+WAIT_DURATION = ENV.get("WAIT_DURATION")
