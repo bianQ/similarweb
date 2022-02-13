@@ -73,6 +73,7 @@ DATABASE = {
 DATABASE = ENV.get("DATABASE", DATABASE)
 
 # ============== 第三方代理设置 ==============
+USE_THIRD_PROXY = ENV.get("USE_THIRD_PROXY", False)
 # 获取 ip 的链接
 GET_IP_URL = ENV.get("GET_IP_URL")
 # 设置白名单的链接
